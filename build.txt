@@ -1,0 +1,3 @@
+displayName = Furgo的记事清单
+author = Furgo_
+version = 0.1
