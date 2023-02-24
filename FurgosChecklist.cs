@@ -24,5 +24,13 @@ namespace FurgosChecklist
         {
             return false;
         }
+
+        public override void AddRecipes()
+        {
+            CreateRecipe()
+                .AddIngredient(ItemID.DirtBlock)
+                .Register();
+
+        }
     }
 }
