@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ModLoader;
 using static FurgosChecklist.GlobalItemSetTooltips;
@@ -32,6 +31,7 @@ namespace FurgosChecklist
                         Main.NewText($"[i/s{itemTuple.Item2}:{type}] 已完成！", Color.Gold);
                         ItemDictToDisplay.Remove(key);
                         completed = true;
+                        NeedsRecalculate = true;
                         break;
                     }
                     if (item.type == type)
@@ -47,6 +47,7 @@ namespace FurgosChecklist
                     {
                         Main.NewText($"[i/s{itemTuple.Item2}:{type}] 已完成！", Color.Gold);
                         ItemDictToDisplay.Remove(key);
+                        NeedsRecalculate = true;
                         break;
                     }
                     if (item.type == type)

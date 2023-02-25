@@ -83,10 +83,26 @@ namespace FurgosChecklist
                             break;
                         case "addhoveritem":
                         case "addhover":
+                            bool checkCompletion = true;
                             if (!int.TryParse(args[1], out int stack) || stack < 0)
-                                return;
+                            {
+                                switch (args[1].ToLower())
+                                {
+                                    case "t":
+                                    case "true":
+                                        stack = 1;
+                                        break;
+                                    case "f":
+                                    case "false":
+                                        checkCompletion = false;
+                                        stack = 1;
+                                        break;
+                                    default:
+                                        return;
+                                }
+                            }
                             int hoverItemType = Main.HoverItem.type;
-                            ItemDictToDisplay.Add(ItemDictToDisplay.Count, new Tuple<string, int, bool>(hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName, stack, true));
+                            ItemDictToDisplay.Add(ItemDictToDisplay.Count, new Tuple<string, int, bool>(hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName, stack, checkCompletion));
                             NeedsRecalculate = true;
                             break;
                         case "highlight":
