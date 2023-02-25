@@ -15,10 +15,8 @@ namespace FurgosChecklist
 
         public override void PostUpdateMiscEffects()
         {
-            foreach (var i in ItemDictToDisplay)
+            foreach ((int key, var itemTuple) in ItemDictToDisplay)
             {
-                var itemTuple = i.Value;
-
                 if (!itemTuple.Item3)
                     continue;
 
@@ -32,7 +30,7 @@ namespace FurgosChecklist
                     if (stack >= itemTuple.Item2)
                     {
                         Main.NewText($"[i/s{itemTuple.Item2}:{type}] 已完成！", Color.Gold);
-                        ItemDictToDisplay.Remove(i.Key);
+                        ItemDictToDisplay.Remove(key);
                         completed = true;
                         break;
                     }
@@ -48,7 +46,7 @@ namespace FurgosChecklist
                     if (stack >= itemTuple.Item2)
                     {
                         Main.NewText($"[i/s{itemTuple.Item2}:{type}] 已完成！", Color.Gold);
-                        ItemDictToDisplay.Remove(i.Key);
+                        ItemDictToDisplay.Remove(key);
                         break;
                     }
                     if (item.type == type)
