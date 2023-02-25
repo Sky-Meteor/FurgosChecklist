@@ -35,6 +35,8 @@ namespace FurgosChecklist
             }
         }
 
+
+
         public override bool PreDrawTooltipLine(Item item, DrawableTooltipLine line, ref int yOffset)
         {
             if (item.type != ModContent.ItemType<Checklist>() || !HighlightLines.Contains(line.Text) || line.Name != "ChecklistTooltip")

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using Terraria;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using static FurgosChecklist.GlobalItemSetTooltips;
@@ -11,11 +10,6 @@ namespace FurgosChecklist
 {
     public class ChecklistSavePlayer : ModPlayer
     {
-        public override void OnEnterWorld(Player player)
-        {
-            NeedsRecalculate = true;
-        }
-
         public override void LoadData(TagCompound tag)
         {
             ItemDictToDisplay = JsonToValue<Dictionary<int, Tuple<string, int, bool>>>(tag.GetString($"Instance.{Player.name}.FCLItemDictToDisplay"))?? new Dictionary<int, Tuple<string, int, bool>>();

@@ -30,14 +30,16 @@ namespace FurgosChecklist
                         break;
                     }
                 case 1:
-                    switch (args[0])
+                    switch (args[0].ToLower())
                     {
-                        case var self when self.ToLower() == "addhoveritem" || self.ToLower() == "addhover":
+                        case "addhoveritem":
+                        case "addhover":
                             int hoverItemType = Main.HoverItem.type;
                             ItemDictToDisplay.Add(ItemDictToDisplay.Count, new Tuple<string, int, bool>((hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName), 1, true));
                             NeedsRecalculate = true;
                             break;
-                        case var self when self.ToLower() == "reset":
+                        case "reset":
+                        case "clear":
                             ItemDictToDisplay.Clear();
                             TooltipLineToDisplay.Clear();
                             HighlightLines.Clear();
@@ -49,13 +51,13 @@ namespace FurgosChecklist
                     }
                     break;
                 case 2:
-                    switch (args[0])
+                    switch (args[0].ToLower())
                     {
-                        case var self when self.ToLower() == "add":
+                        case "add":
                             TooltipLineToDisplay.Add(args[1]);
                             NeedsRecalculate = true;
                             break;
-                        case var self when self.ToLower() == "remove":
+                        case "remove":
                             if (!int.TryParse(args[1], out int index) || index < 0)
                                 return;
                             if (index < ItemDictToDisplay.Count)
@@ -73,20 +75,22 @@ namespace FurgosChecklist
                             else
                                 Main.NewText(args[1] + "输入错误", Color.Red);
                             break;
-                        case var self when self.ToLower() == "additem":
+                        case "additem":
                             if (args[1].Split(":").Length != 2 || !int.TryParse(args[1].Split(":")[1][..^1], out int type) || type <= 0)
                                 return;
                             ItemDictToDisplay.Add(ItemDictToDisplay.Count, new Tuple<string, int, bool>(type < Main.maxItemTypes ? type.ToString() : ModContent.GetModItem(type)?.FullName, 1, true));
                             NeedsRecalculate = true;
                             break;
-                        case var self when self.ToLower() == "addhoveritem" || self.ToLower() == "addhover":
+                        case "addhoveritem":
+                        case "addhover":
                             if (!int.TryParse(args[1], out int stack) || stack < 0)
                                 return;
                             int hoverItemType = Main.HoverItem.type;
                             ItemDictToDisplay.Add(ItemDictToDisplay.Count, new Tuple<string, int, bool>(hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName, stack, true));
                             NeedsRecalculate = true;
                             break;
-                        case var self when self.ToLower() == "highlight" || self.ToLower() == "hl":
+                        case "highlight":
+                        case "hl":
                             if (!int.TryParse(args[1], out int highlightIndex) || highlightIndex < 0 || highlightIndex >= ItemDictToDisplay.Count + TooltipLineToDisplay.Count)
                                 return;
                             if (highlightIndex < ItemDictToDisplay.Count)
@@ -101,10 +105,10 @@ namespace FurgosChecklist
                     }
                     break;
                 case 3:
-                    switch (args[0])
+                    switch (args[0].ToLower())
                     {
-                        case var self when self.ToLower() == "swap":
-                            if (!int.TryParse(args[1], out int index1) || !int.TryParse(args[2], out int index2) || index1 < 0 || index2 < 0 || (index1 >= ItemDictToDisplay.Count && index2 < ItemDictToDisplay.Count) ||(index2 >= ItemDictToDisplay.Count && index1 < ItemDictToDisplay.Count))
+                        case "swap":
+                            if (!int.TryParse(args[1], out int index1) || !int.TryParse(args[2], out int index2) || index1 < 0 || index2 < 0 || (index1 >= ItemDictToDisplay.Count && index2 < ItemDictToDisplay.Count) || (index2 >= ItemDictToDisplay.Count && index1 < ItemDictToDisplay.Count))
                                 return;
                             if (index1 < ItemDictToDisplay.Count && index2 < ItemDictToDisplay.Count)
                             {
@@ -120,7 +124,7 @@ namespace FurgosChecklist
                             else
                                 Main.NewText("输入错误", Color.Red);
                             break;
-                        case var self when self.ToLower() == "additem":
+                        case "additem":
                             if (args[1].Split(":").Length != 2 || !int.TryParse(args[1].Split(":")[1][..^1], out int type) || type <= 0)
                                 return;
                             if (!int.TryParse(args[2], out int stack) || stack < 0)
@@ -128,12 +132,64 @@ namespace FurgosChecklist
                             ItemDictToDisplay.Add(ItemDictToDisplay.Count, new Tuple<string, int, bool>(type < Main.maxItemTypes ? type.ToString() : ModContent.GetModItem(type)?.FullName, stack, true));
                             NeedsRecalculate = true;
                             break;
+                        case "addhoveritem":
+                        case "addhover":
+                            if (!int.TryParse(args[1], out int hoverItemStack) || hoverItemStack < 0)
+                                return;
+                            int hoverItemType = Main.HoverItem.type;
+                            bool checkCompletion;
+                            switch (args[2].ToLower())
+                            {
+                                case "t":
+                                case "true":
+                                    checkCompletion = true;
+                                    break;
+                                case "f":
+                                case "false":
+                                    checkCompletion = false;
+                                    break;
+                                default:
+                                    return;
+                            }
+                            ItemDictToDisplay.Add(ItemDictToDisplay.Count, new Tuple<string, int, bool>(hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName, hoverItemStack, checkCompletion));
+                            NeedsRecalculate = true;
+                            break;
                         default:
                             Main.NewText(args[0] + "输入错误", Color.Red);
                             break;
                     }
                     break;
+                case 4:
+                    switch (args[0])
+                    {
+                        case "additem":
+                            if (args[1].Split(":").Length != 2 || !int.TryParse(args[1].Split(":")[1][..^1], out int type) || type <= 0)
+                                return;
+                            if (!int.TryParse(args[2], out int stack) || stack < 0)
+                                return;
+                            bool checkCompletion;
+                            switch (args[3].ToLower())
+                            {
+                                case "t":
+                                case "true":
+                                    checkCompletion = true;
+                                    break;
+                                case "f":
+                                case "false":
+                                    checkCompletion = false;
+                                    break;
+                                default:
+                                    return;
+                            }
 
+                            ItemDictToDisplay.Add(ItemDictToDisplay.Count, new Tuple<string, int, bool>(type < Main.maxItemTypes ? type.ToString() : ModContent.GetModItem(type)?.FullName, stack, checkCompletion));
+                            NeedsRecalculate = true;
+                            break;
+                        default:
+                            Main.NewText(args[0] + "输入错误", Color.Red);
+                            break;
+                    }
+                    break;
                 default:
                     Main.NewText(args[0] + "输入错误", Color.Red);
                     break;
