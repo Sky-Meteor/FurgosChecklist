@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ModLoader;
 using static FurgosChecklist.GlobalItemSetTooltips;
@@ -16,40 +17,58 @@ namespace FurgosChecklist
             switch (args.Length)
             {
                 case 0:
-                {
-                    for (int i = 0; i < ItemListToDisplay.Count; i++)
                     {
-                        Main.NewText($"{i} [i:{ItemListToDisplay[i]}]");
-                    }
+                        for (int i = 0; i < ItemDictToDisplay.Count; i++)
+                        {
+                            Main.NewText($"{i} [i:{ItemDictToDisplay[i].Item1}]");
+                        }
 
-                    for (int i = 0; i < TooltipLineToDisplay.Count; i++)
-                    {
-                        Main.NewText($"{i + ItemListToDisplay.Count} {TooltipLineToDisplay[i]}");
+                        for (int i = 0; i < TooltipLineToDisplay.Count; i++)
+                        {
+                            Main.NewText($"{i + ItemDictToDisplay.Count} {TooltipLineToDisplay[i]}");
+                        }
+                        break;
                     }
-                    break;
-                }
                 case 1:
-                    Main.NewText("缺少参数", Color.Red);
+                    switch (args[0])
+                    {
+                        case var self when self.ToLower() == "addhoveritem" || self.ToLower() == "addhover":
+                            int hoverItemType = Main.HoverItem.type;
+                            ItemDictToDisplay.Add(ItemDictToDisplay.Count, new Tuple<string, int, bool>((hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName), 1, true));
+                            NeedsRecalculate = true;
+                            break;
+                        case var self when self.ToLower() == "reset":
+                            ItemDictToDisplay.Clear();
+                            TooltipLineToDisplay.Clear();
+                            HighlightLines.Clear();
+                            NeedsRecalculate = true;
+                            break;
+                        default:
+                            Main.NewText("缺少参数", Color.Red);
+                            break;
+                    }
                     break;
                 case 2:
                     switch (args[0])
                     {
                         case var self when self.ToLower() == "add":
                             TooltipLineToDisplay.Add(args[1]);
-                            NeedsRecalculateHighlight = true;
+                            NeedsRecalculate = true;
                             break;
                         case var self when self.ToLower() == "remove":
                             if (!int.TryParse(args[1], out int index) || index < 0)
                                 return;
-                            if (index < ItemListToDisplay.Count)
+                            if (index < ItemDictToDisplay.Count)
                             {
-                                ItemListToDisplay.RemoveAt(index);
-                                NeedsRecalculateHighlight = true;
+                                HighlightLines.Remove(GetItemTooltipLine()[index].Text);
+                                ItemDictToDisplay.Remove(index);
+                                NeedsRecalculate = true;
                             }
-                            else if (index < ItemListToDisplay.Count + TooltipLineToDisplay.Count)
+                            else if (index < ItemDictToDisplay.Count + TooltipLineToDisplay.Count)
                             {
-                                TooltipLineToDisplay.RemoveAt(index - ItemListToDisplay.Count);
-                                NeedsRecalculateHighlight = true;
+                                HighlightLines.Remove(GetTooltipLine()[index - ItemDictToDisplay.Count].Text);
+                                TooltipLineToDisplay.RemoveAt(index - ItemDictToDisplay.Count);
+                                NeedsRecalculate = true;
                             }
                             else
                                 Main.NewText(args[1] + "输入错误", Color.Red);
@@ -57,14 +76,24 @@ namespace FurgosChecklist
                         case var self when self.ToLower() == "additem":
                             if (args[1].Split(":").Length != 2 || !int.TryParse(args[1].Split(":")[1][..^1], out int type) || type <= 0)
                                 return;
-                            ItemListToDisplay.Add(type < Main.maxItemTypes ? type.ToString() : ModContent.GetModItem(type)?.FullName);
-                            NeedsRecalculateHighlight = true;
+                            ItemDictToDisplay.Add(ItemDictToDisplay.Count, new Tuple<string, int, bool>(type < Main.maxItemTypes ? type.ToString() : ModContent.GetModItem(type)?.FullName, 1, true));
+                            NeedsRecalculate = true;
+                            break;
+                        case var self when self.ToLower() == "addhoveritem" || self.ToLower() == "addhover":
+                            if (!int.TryParse(args[1], out int stack) || stack < 0)
+                                return;
+                            int hoverItemType = Main.HoverItem.type;
+                            ItemDictToDisplay.Add(ItemDictToDisplay.Count, new Tuple<string, int, bool>(hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName, stack, true));
+                            NeedsRecalculate = true;
                             break;
                         case var self when self.ToLower() == "highlight" || self.ToLower() == "hl":
-                            if (!int.TryParse(args[1], out int highlightIndex) || highlightIndex < 0 || highlightIndex >= ItemListToDisplay.Count + TooltipLineToDisplay.Count)
+                            if (!int.TryParse(args[1], out int highlightIndex) || highlightIndex < 0 || highlightIndex >= ItemDictToDisplay.Count + TooltipLineToDisplay.Count)
                                 return;
-                            Highlights.Add(highlightIndex);
-                            NeedsRecalculateHighlight = true;
+                            if (highlightIndex < ItemDictToDisplay.Count)
+                                HighlightLines.Add(GetItemTooltipLine()[highlightIndex].Text);
+                            else if (highlightIndex < ItemDictToDisplay.Count + TooltipLineToDisplay.Count)
+                                HighlightLines.Add(GetTooltipLine()[highlightIndex - ItemDictToDisplay.Count].Text);
+                            NeedsRecalculate = true;
                             break;
                         default:
                             Main.NewText(args[0] + "输入错误", Color.Red);
@@ -75,19 +104,29 @@ namespace FurgosChecklist
                     switch (args[0])
                     {
                         case var self when self.ToLower() == "swap":
-                            if (!int.TryParse(args[1], out int index1) || !int.TryParse(args[2], out int index2) || index1 < 0 || index2 < 0)
+                            if (!int.TryParse(args[1], out int index1) || !int.TryParse(args[2], out int index2) || index1 < 0 || index2 < 0 || (index1 >= ItemDictToDisplay.Count && index2 < ItemDictToDisplay.Count) ||(index2 >= ItemDictToDisplay.Count && index1 < ItemDictToDisplay.Count))
                                 return;
-                            if (index1 < ItemListToDisplay.Count && index2 < ItemListToDisplay.Count)
+                            if (index1 < ItemDictToDisplay.Count && index2 < ItemDictToDisplay.Count)
                             {
-                                (ItemListToDisplay[index1], ItemListToDisplay[index2]) = (ItemListToDisplay[index2], ItemListToDisplay[index1]);
+                                (ItemDictToDisplay[index1], ItemDictToDisplay[index2]) = (ItemDictToDisplay[index2], ItemDictToDisplay[index1]);
+                                NeedsRecalculate = true;
                             }
-                            else if (index1 < ItemListToDisplay.Count + TooltipLineToDisplay.Count && index2 < ItemListToDisplay.Count + TooltipLineToDisplay.Count)
+                            else if (index1 < ItemDictToDisplay.Count + TooltipLineToDisplay.Count && index2 < ItemDictToDisplay.Count + TooltipLineToDisplay.Count)
                             {
-                                (TooltipLineToDisplay[index1 - ItemListToDisplay.Count], TooltipLineToDisplay[index2 - ItemListToDisplay.Count]) = 
-                                (TooltipLineToDisplay[index2 - ItemListToDisplay.Count], TooltipLineToDisplay[index1 - ItemListToDisplay.Count]);
+                                (TooltipLineToDisplay[index1 - ItemDictToDisplay.Count], TooltipLineToDisplay[index2 - ItemDictToDisplay.Count]) =
+                                (TooltipLineToDisplay[index2 - ItemDictToDisplay.Count], TooltipLineToDisplay[index1 - ItemDictToDisplay.Count]);
+                                NeedsRecalculate = true;
                             }
                             else
                                 Main.NewText("输入错误", Color.Red);
+                            break;
+                        case var self when self.ToLower() == "additem":
+                            if (args[1].Split(":").Length != 2 || !int.TryParse(args[1].Split(":")[1][..^1], out int type) || type <= 0)
+                                return;
+                            if (!int.TryParse(args[2], out int stack) || stack < 0)
+                                return;
+                            ItemDictToDisplay.Add(ItemDictToDisplay.Count, new Tuple<string, int, bool>(type < Main.maxItemTypes ? type.ToString() : ModContent.GetModItem(type)?.FullName, stack, true));
+                            NeedsRecalculate = true;
                             break;
                         default:
                             Main.NewText(args[0] + "输入错误", Color.Red);

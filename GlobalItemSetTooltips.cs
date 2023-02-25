@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Localization;
@@ -9,17 +10,16 @@ namespace FurgosChecklist
     public class GlobalItemSetTooltips : GlobalItem
     {
         public static List<string> TooltipLineToDisplay;
-        public static List<string> ItemListToDisplay;
-        public static List<int> Highlights;
+        public static Dictionary<int, Tuple<string, int, bool>> ItemDictToDisplay;
         public static List<string> HighlightLines;
-        public static bool NeedsRecalculateHighlight;
+        public static bool NeedsRecalculate;
 
         public override void ModifyTooltips(Item item, List<TooltipLine> tooltips)
         {
-            if (NeedsRecalculateHighlight)
+            if (NeedsRecalculate)
             {
-                RecalculateHighlight();
-                NeedsRecalculateHighlight = false;
+                Recalculate();
+                NeedsRecalculate = false;
             }
 
             if (item.type == ModContent.ItemType<Checklist>())
@@ -43,39 +43,38 @@ namespace FurgosChecklist
             return false;
         }
 
-        private void RecalculateHighlight()
+        private void Recalculate()
         {
-            HighlightLines = GetHighlightTooltipLine();
+            ItemDictToDisplay = GetRecalculatedItemDict();
         }
 
-        private List<TooltipLine> GetItemTooltipLine()
+        public static List<TooltipLine> GetItemTooltipLine()
         {
-            if (ItemListToDisplay.Count == 0)
+            if (ItemDictToDisplay.Count == 0)
                 return new List<TooltipLine>();
 
             List<TooltipLine> returnValue = new List<TooltipLine>();
 
-            foreach (string item in ItemListToDisplay)
+            for (int i = 0; i < ItemDictToDisplay.Count; i++)
             {
                 string text = default;
-                int id = 0;
-                if (int.TryParse(item, out int type) && type < Main.maxItemTypes)
+                if (int.TryParse(ItemDictToDisplay[i].Item1, out int type) && type < Main.maxItemTypes)
                 {
                     text = Lang.GetItemNameValue(type);
-                    id = type;
                 }
-                else if (ModContent.TryFind(item, out ModItem modItem))
+                else if (ModContent.TryFind(ItemDictToDisplay[i].Item1, out ModItem modItem))
                 {
                     text = modItem.DisplayName.GetTranslation(Language.ActiveCulture);
-                    id = modItem.Type;
+                    if (text == modItem.DisplayName.Key)
+                        text = "";
                 }
-                returnValue.Add(new TooltipLine(Mod, "ChecklistTooltip", $"[i:{id}] {text}"));
+                returnValue.Add(new TooltipLine(FurgosChecklist.Instance, "ChecklistTooltip", $"[i/s{ItemDictToDisplay[i].Item2}:{ItemDictToDisplay[i].Item1}] {text}"));
             }
-
+            
             return returnValue;
         }
 
-        private List<TooltipLine> GetTooltipLine()
+        public static List<TooltipLine> GetTooltipLine()
         {
             if (TooltipLineToDisplay.Count == 0)
                 return new List<TooltipLine>();
@@ -84,24 +83,20 @@ namespace FurgosChecklist
 
             foreach (string line in TooltipLineToDisplay)
             {
-                returnValue.Add(new TooltipLine(Mod, "ChecklistTooltip", line));
+                returnValue.Add(new TooltipLine(FurgosChecklist.Instance, "ChecklistTooltip", line));
             }
 
             return returnValue;
         }
 
-        private List<string> GetHighlightTooltipLine()
+        private static Dictionary<int, Tuple<string, int, bool>> GetRecalculatedItemDict()
         {
-            List<string> returnValue = new List<string>();
-            if (ItemListToDisplay.Count == 0 && TooltipLineToDisplay.Count == 0)
-                return new List<string>();
-
-            foreach (int line in Highlights)
+            Dictionary<int, Tuple<string, int, bool>> returnValue = new Dictionary<int, Tuple<string, int, bool>>();
+            int i = 0;
+            foreach (var item in ItemDictToDisplay)
             {
-                if (line < ItemListToDisplay.Count)
-                    returnValue.Add(GetItemTooltipLine()[line].Text);
-                else if (line < ItemListToDisplay.Count + TooltipLineToDisplay.Count)
-                    returnValue.Add(GetTooltipLine()[line - ItemListToDisplay.Count].Text);
+                returnValue.Add(i, item.Value);
+                i++;
             }
 
             return returnValue;
@@ -109,17 +104,15 @@ namespace FurgosChecklist
 
         public override void Load()
         {
-            ItemListToDisplay = new List<string>();
+            ItemDictToDisplay = new Dictionary<int, Tuple<string, int, bool>>();
             TooltipLineToDisplay = new List<string>();
-            Highlights = new List<int>();
             HighlightLines = new List<string>();
         }
 
         public override void Unload()
         {
-            ItemListToDisplay = null;
+            ItemDictToDisplay = null;
             TooltipLineToDisplay = null;
-            Highlights = null;
             HighlightLines = null;
         }
     }

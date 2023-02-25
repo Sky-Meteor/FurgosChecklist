@@ -1,4 +1,7 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 using Terraria;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
@@ -10,21 +13,25 @@ namespace FurgosChecklist
     {
         public override void OnEnterWorld(Player player)
         {
-            GlobalItemSetTooltips.NeedsRecalculateHighlight = true;
+            NeedsRecalculate = true;
         }
 
         public override void LoadData(TagCompound tag)
         {
-            ItemListToDisplay = tag.GetList<string>($"FurgosChecklist.{Player.name}.FCLItemListToDisplay").ToList();
-            TooltipLineToDisplay = tag.GetList<string>($"FurgosChecklist.{Player.name}.FCLTooltipLineToDisplay").ToList();
-            Highlights = tag.GetList<int>($"FurgosChecklist.{Player.name}.FCLHighlights").ToList();
+            ItemDictToDisplay = JsonToValue<Dictionary<int, Tuple<string, int, bool>>>(tag.GetString($"Instance.{Player.name}.FCLItemDictToDisplay"))?? new Dictionary<int, Tuple<string, int, bool>>();
+            TooltipLineToDisplay = tag.GetList<string>($"Instance.{Player.name}.FCLTooltipLineToDisplay").ToList();
+            HighlightLines = tag.GetList<string>($"Instance.{Player.name}.FCLHighlightLines").ToList();
         }
 
         public override void SaveData(TagCompound tag)
         {
-            tag.Add($"FurgosChecklist.{Player.name}.FCLItemListToDisplay", ItemListToDisplay);
-            tag.Add($"FurgosChecklist.{Player.name}.FCLTooltipLineToDisplay", TooltipLineToDisplay);
-            tag.Add($"FurgosChecklist.{Player.name}.FCLHighlights", Highlights);
+            tag.Add($"Instance.{Player.name}.FCLItemDictToDisplay", ValueToJson(ItemDictToDisplay));
+            tag.Add($"Instance.{Player.name}.FCLTooltipLineToDisplay", TooltipLineToDisplay);
+            tag.Add($"Instance.{Player.name}.FCLHighlightLines", HighlightLines);
         }
+
+        private static string ValueToJson(object obj) => JsonSerializer.Serialize(obj);
+
+        private static T JsonToValue<T>(string json) => string.IsNullOrEmpty(json) ? default : JsonSerializer.Deserialize<T>(json);
     }
 }

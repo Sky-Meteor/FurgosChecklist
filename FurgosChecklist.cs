@@ -30,7 +30,6 @@ namespace FurgosChecklist
             CreateRecipe()
                 .AddIngredient(ItemID.DirtBlock)
                 .Register();
-
         }
     }
 }
