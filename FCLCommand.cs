@@ -34,6 +34,9 @@ namespace FurgosChecklist
                     {
                         case "addhoveritem":
                         case "addhover":
+                        case "ahi":
+                        case "ah":
+                        case "hi":
                             int hoverItemType = Main.HoverItem.type;
                             ItemDictToDisplay.Add(ItemDictToDisplay.Count, new Tuple<string, int, bool>((hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName), 1, true));
                             NeedsRecalculate = true;
@@ -83,6 +86,9 @@ namespace FurgosChecklist
                             break;
                         case "addhoveritem":
                         case "addhover":
+                        case "ahi":
+                        case "ah":
+                        case "hi":
                             bool checkCompletion = true;
                             if (!int.TryParse(args[1], out int stack) || stack < 0)
                             {
@@ -150,6 +156,9 @@ namespace FurgosChecklist
                             break;
                         case "addhoveritem":
                         case "addhover":
+                        case "ahi":
+                        case "ah":
+                        case "hi":
                             if (!int.TryParse(args[1], out int hoverItemStack) || hoverItemStack < 0)
                                 return;
                             int hoverItemType = Main.HoverItem.type;
