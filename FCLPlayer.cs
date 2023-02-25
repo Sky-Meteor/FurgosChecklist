@@ -29,6 +29,7 @@ namespace FurgosChecklist
                     if (stack >= itemTuple.Item2)
                     {
                         Main.NewText($"[i/s{itemTuple.Item2}:{type}] 已完成！", Color.Gold);
+                        HighlightLines.Remove(GetItemTooltipLine()[key].Text);
                         ItemDictToDisplay.Remove(key);
                         completed = true;
                         NeedsRecalculate = true;
@@ -46,6 +47,7 @@ namespace FurgosChecklist
                     if (stack >= itemTuple.Item2)
                     {
                         Main.NewText($"[i/s{itemTuple.Item2}:{type}] 已完成！", Color.Gold);
+                        HighlightLines.Remove(GetItemTooltipLine()[key].Text);
                         ItemDictToDisplay.Remove(key);
                         NeedsRecalculate = true;
                         break;
@@ -53,7 +55,6 @@ namespace FurgosChecklist
                     if (item.type == type)
                         stack += item.stack;
                 }
-
             }
         }
 
