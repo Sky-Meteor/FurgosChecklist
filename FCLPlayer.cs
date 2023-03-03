@@ -1,5 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using System.Linq;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Terraria;
+using Terraria.GameInput;
 using Terraria.ModLoader;
 using static FurgosChecklist.GlobalItemSetTooltips;
 
@@ -7,6 +11,9 @@ namespace FurgosChecklist
 {
     public class FCLPlayer : ModPlayer
     {
+        public static string NeedsOpenChatWithText;
+        public static int InsertIndex = -1;
+
         public override void OnEnterWorld(Player player)
         {
             NeedsRecalculate = true;
@@ -14,41 +21,37 @@ namespace FurgosChecklist
 
         public override void PostUpdateMiscEffects()
         {
-            foreach ((int key, var itemTuple) in ItemDictToDisplay)
+            if (NeedsOpenChatWithText != default)
             {
-                if (!itemTuple.Item3)
+                Main.OpenPlayerChat();
+                Main.chatText = NeedsOpenChatWithText; 
+                NeedsOpenChatWithText = default;
+            }
+
+            CheckItemCompletion();
+        }
+
+        private void CheckItemCompletion()
+        {
+            foreach (ChecklistLine line in ChecklistLines.ToList())
+            {
+                if (string.IsNullOrEmpty(line.ItemType))
                     continue;
 
-                int type = GetType(itemTuple.Item1);
+                if (!line.CheckCompletion)
+                    continue;
+
+                int type = GetType(line.ItemType);
                 if (type == -1)
                     continue;
+
                 int stack = 0;
-                bool completed = false;
                 foreach (Item item in Player.inventory)
                 {
-                    if (stack >= itemTuple.Item2)
+                    if (stack >= line.ItemStack)
                     {
-                        Main.NewText($"[i/s{itemTuple.Item2}:{type}] 已完成！", Color.Gold);
-                        HighlightLines.Remove(GetItemTooltipLine()[key].Text);
-                        ItemDictToDisplay.Remove(key);
-                        completed = true;
-                        NeedsRecalculate = true;
-                        break;
-                    }
-                    if (item.type == type)
-                        stack += item.stack;
-                }
-
-                if (completed)
-                    continue;
-
-                foreach (Item item in Player.bank4.item)
-                {
-                    if (stack >= itemTuple.Item2)
-                    {
-                        Main.NewText($"[i/s{itemTuple.Item2}:{type}] 已完成！", Color.Gold);
-                        HighlightLines.Remove(GetItemTooltipLine()[key].Text);
-                        ItemDictToDisplay.Remove(key);
+                        Main.NewText($"[i/s{line.ItemStack}:{type}] 已完成！", Color.Gold);
+                        ChecklistLines.Remove(line);
                         NeedsRecalculate = true;
                         break;
                     }
