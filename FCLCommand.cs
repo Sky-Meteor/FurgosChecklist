@@ -1,6 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text.Json;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.IO;
 using Terraria.ModLoader;
 using static FurgosChecklist.GlobalItemSetTooltips;
 
@@ -25,9 +29,13 @@ namespace FurgosChecklist
 /fcl {addhoveritem|addhover|ahi|ah|hi} [stack = 1] [checkCompletion = true]  =>  把鼠标所指物品添加到清单，堆叠数默认为1，当获得指定数量物品时自动移除此条目
 /fcl {addhoveritem|addhover|ahi|ah|hi} (checkCompletion)  =>  把鼠标所指物品添加到清单，并设置是否自动移除
 /fcl {highlight|hl} (line)  =>  高亮指定行，当指定行已被高亮时取消其高亮，line为整数
+/fcl move (lineFrom) (lineTo)  =>  把某行的内容移动到目标行，line为整数
 /fcl swap (line1) (line2)  =>  交换两行的内容，不可以在文字行与物品行之间交换，line为整数
 /fcl edit (line)  =>  下次添加条目时，将指定行替换为添加的内容，line为整数
 /fcl edit  =>  取消编辑操作
+/fcl {savecustom|save} (key)  =>  把当前的全部清单条目以特定的key保存到电脑
+/fcl {loadcustom|load} (key)  =>  通过特定的key从电脑中加载保存过的清单条目，可以跨人物跨世界加载
+/fcl {removecustom|rmc} (key)  =>  通过特定的key移除保存的清单条目
 ";
 
         public override CommandType Type => CommandType.Chat;
@@ -40,9 +48,15 @@ namespace FurgosChecklist
                 case 0:
                     {
                         int i = 0;
+                        Main.NewText("清单行：");
                         foreach (ChecklistLine line in ChecklistLines)
                         {
                             Main.NewText($"{++i} {line.Text}");
+                        }
+                        Main.NewText("预设：");
+                        foreach (string key in _savedChecklist.GetAllKeys())
+                        {
+                            Main.NewText(key);
                         }
                         break;
                     }
@@ -57,6 +71,8 @@ namespace FurgosChecklist
                         case "ah":
                         case "hi":
                             int hoverItemType = Main.HoverItem.type;
+                            if (hoverItemType == 0)
+                                return;
                             ChecklistLines.AddOrInsert(new ChecklistLine(hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName, 1, true));
                             break;
                         case "reset":
@@ -110,6 +126,9 @@ namespace FurgosChecklist
                         case "ahi":
                         case "ah":
                         case "hi":
+                            int hoverItemType = Main.HoverItem.type;
+                            if (hoverItemType == 0)
+                                return;
                             bool checkCompletion = true;
                             if (!int.TryParse(args[1], out int stack) || stack < 0)
                             {
@@ -128,7 +147,6 @@ namespace FurgosChecklist
                                         return;
                                 }
                             }
-                            int hoverItemType = Main.HoverItem.type;
                             ChecklistLines.AddOrInsert(new ChecklistLine(hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName, stack, checkCompletion));
                             break;
                         case "highlight":
@@ -190,6 +208,18 @@ namespace FurgosChecklist
                             foreach (int removeIndex in rms)
                                 ChecklistLines.RemoveAt(removeIndex);
                             break;
+                        case "savecustom":
+                        case "save":
+                            SaveCustom(args[1], ChecklistLines);
+                            break;
+                        case "loadcustom":
+                        case "load":
+                            ChecklistLines = LoadCustom(args[1]);
+                            break;
+                        case "removecustom":
+                        case "rmc":
+                            RemoveCustom(args[1]);
+                            break;
                         default:
                             Main.NewText("指令错误", Color.Red);
                             break;
@@ -206,6 +236,15 @@ namespace FurgosChecklist
                             index1--;
                             index2--;
                             (ChecklistLines[index1], ChecklistLines[index2]) = (ChecklistLines[index2], ChecklistLines[index1]);
+                            break;
+                        case "move":
+                            if (!int.TryParse(args[1], out int indexFrom) || !int.TryParse(args[2], out int indexTo) || indexFrom <= 0 || indexTo <= 0 || indexFrom > ChecklistLines.Count || indexTo > ChecklistLines.Count || indexFrom == indexTo)
+                                return;
+                            indexFrom--;
+                            indexTo--;
+                            ChecklistLine line = ChecklistLines[indexFrom];
+                            ChecklistLines.RemoveAt(indexFrom);
+                            ChecklistLines.Insert(indexTo, line);
                             break;
                         case "additem":
                         case "ai":
@@ -240,6 +279,8 @@ namespace FurgosChecklist
                             if (!int.TryParse(args[1], out int hoverItemStack) || hoverItemStack < 0)
                                 return;
                             int hoverItemType = Main.HoverItem.type;
+                            if (hoverItemType == 0)
+                                return;
                             bool checkCompletion;
                             switch (args[2].ToLower())
                             {
@@ -309,6 +350,41 @@ namespace FurgosChecklist
             line.Status = line.Status == status ? ChecklistLineStatus.Normal : status;
             ChecklistLines.Insert(index, line);
         }
+#region Preferences
+        private static Preferences _savedChecklist;
+        private static readonly string path = Path.Combine(Main.SavePath, "ModConfigs", "FurgosChecklist_SavedChecklist.json");
+        public override void Load()
+        {
+            _savedChecklist = new Preferences(path);
+            _savedChecklist.Load();
+        }
+
+        public override void Unload()
+        {
+            _savedChecklist.Save();
+            _savedChecklist = null;
+        }
+
+        private static List<ChecklistLine> LoadCustom(string key) => _savedChecklist.Get(key, string.Empty).ToValue<List<ChecklistLine>>() ?? new List<ChecklistLine>();
+
+        private static void SaveCustom(string key, List<ChecklistLine> obj)
+        {
+            _savedChecklist.Put(key, obj.ToJson());
+            _savedChecklist.Save();
+        }
+
+        private static void RemoveCustom(string key)
+        {
+            FieldInfo dataField = _savedChecklist.GetType().GetField("_data", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (dataField?.GetValue(_savedChecklist) is Dictionary<string, object> dict)
+            {
+                dict.Remove(key);
+                dataField.SetValue(_savedChecklist, dict);
+            }
+
+            _savedChecklist.Save();
+        }
+        #endregion
     }
 
     public static class Util
@@ -337,5 +413,11 @@ namespace FurgosChecklist
                 FCLPlayer.InsertIndex = -1;
             }
         }
+
+        private static readonly JsonSerializerOptions jsonOptions = new() { IncludeFields = true };
+
+        public static T ToValue<T>(this string json) => string.IsNullOrEmpty(json) ? default : JsonSerializer.Deserialize<T>(json, jsonOptions);
+
+        public static string ToJson(this object obj) => JsonSerializer.Serialize(obj, jsonOptions);
     }
 }
