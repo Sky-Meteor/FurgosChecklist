@@ -44,7 +44,7 @@ namespace FurgosChecklist
             Player player = caller.Player;
             var fclPlayer = player.GetModPlayer<FCLPlayer>();
             // ReSharper disable once InconsistentNaming
-            var ChecklistLines = player.ChecklistLines();
+            ref var ChecklistLines =  ref fclPlayer.ChecklistLines;
             switch (args.Length)
             {
                 #region Print lines
@@ -213,10 +213,12 @@ namespace FurgosChecklist
                             break;
                         case "savecustom":
                         case "save":
+                            Main.NewText("成功保存");
                             SaveCustom(args[1], ChecklistLines);
                             break;
                         case "loadcustom":
                         case "load":
+                            Main.NewText("成功加载");
                             ChecklistLines = LoadCustom(args[1]);
                             break;
                         case "removecustom":
@@ -401,22 +403,23 @@ namespace FurgosChecklist
             }
 
             var fclPlayer = player.GetModPlayer<FCLPlayer>();
-            if ((!player.GetModPlayer<FCLPlayer>().RemoveWhenAddOrInsert || item is not ChecklistLine line))
-                return;
-            var checklistLines = player.ChecklistLines();
-            for (int index = 0; index < checklistLines.Count; index++)
+            if (player.GetModPlayer<FCLPlayer>().RemoveWhenAddOrInsert && item is ChecklistLine line)
             {
-                if (checklistLines[index].Status == ChecklistLineStatus.ToBeDeleted)
+                var checklistLines = player.ChecklistLines();
+                for (int index = 0; index < checklistLines.Count; index++)
                 {
-                    checklistLines.RemoveAt(index);
-                    checklistLines.Insert(index, line);
-                    fclPlayer.RemoveWhenAddOrInsert = false;
-                    return;
+                    if (checklistLines[index].Status == ChecklistLineStatus.ToBeDeleted)
+                    {
+                        checklistLines.RemoveAt(index);
+                        checklistLines.Insert(index, line);
+                        fclPlayer.RemoveWhenAddOrInsert = false;
+                        return;
+                    }
                 }
             }
+
             if (fclPlayer.InsertIndex == -1)
                 list.Add(item);
-
             else
             {
                 list.Insert(player.GetModPlayer<FCLPlayer>().InsertIndex, item);
