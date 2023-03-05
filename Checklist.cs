@@ -1,19 +1,35 @@
-﻿using Terraria.ModLoader;
+﻿using Terraria;
+using Terraria.ID;
+using Terraria.ModLoader;
 
 namespace FurgosChecklist
 {
-	public class FurgosChecklist : Mod
+    public class Checklist : ModItem
     {
-        public static FurgosChecklist Instance;
+        public override string Texture => "Terraria/Images/UI/UI_quickicon1";
 
-        public override void Load()
+        public override void SetStaticDefaults()
         {
-            Instance = this;
+            DisplayName.SetDefault("备忘清单");
         }
 
-        public override void Unload()
+        public override void SetDefaults()
         {
-            Instance = null;
+            Item.width = 20;
+            Item.height = 20;
+            Item.rare = ItemRarityID.Green;
+        }
+
+        public override bool CanUseItem(Player player)
+        {
+            return false;
+        }
+
+        public override void AddRecipes()
+        {
+            CreateRecipe()
+                .AddIngredient(ItemID.DirtBlock)
+                .Register();
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using Terraria.ModLoader.IO;
-using static FurgosChecklist.GlobalItemSetTooltips;
 
 namespace FurgosChecklist
 {

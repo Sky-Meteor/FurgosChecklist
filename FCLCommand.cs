@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.Xna.Framework;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.IO;
 using Terraria.ModLoader;

@@ -1,5 +1,5 @@
-﻿using System.Linq;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
+using System.Linq;
 using Terraria;
 using Terraria.ModLoader;
 
@@ -22,7 +22,7 @@ namespace FurgosChecklist
             if (NeedsOpenChatWithText != default)
             {
                 Main.OpenPlayerChat();
-                Main.chatText = NeedsOpenChatWithText; 
+                Main.chatText = NeedsOpenChatWithText;
                 NeedsOpenChatWithText = default;
             }
 
