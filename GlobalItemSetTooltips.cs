@@ -8,21 +8,19 @@ namespace FurgosChecklist
 {
     public class GlobalItemSetTooltips : GlobalItem
     {
-        public static List<ChecklistLine> ChecklistLines;
-        public static bool NeedsRecalculate;
-        public static bool RemoveWhenAddOrInsert;
+        //public static bool NeedsRecalculate;
 
         public override void ModifyTooltips(Item item, List<TooltipLine> tooltips)
         {
             if (item.type == ModContent.ItemType<Checklist>())
             {
-                if (NeedsRecalculate)
+                /*if (NeedsRecalculate)
                 {
                     Recalculate();
                     NeedsRecalculate = false;
-                }
+                }*/
 
-                foreach (ChecklistLine line in ChecklistLines)
+                foreach (ChecklistLine line in Main.LocalPlayer.ChecklistLines())
                 {
                     var tooltipLine = new TooltipLine(Mod, "ChecklistTooltip", line.Text);
                     tooltipLine.OverrideColor = line.Status switch
@@ -55,19 +53,9 @@ namespace FurgosChecklist
             ChecklistLines = itemList;
         }*/
 
-        private static void Recalculate()
+        /*private static void Recalculate()
         {
-            //RefreshChecklistLines();
-        }
-
-        public override void Load()
-        {
-            ChecklistLines = new List<ChecklistLine>();
-        }
-
-        public override void Unload()
-        {
-            ChecklistLines = null;
-        }
+            RefreshChecklistLines();
+        }*/
     }
 }

@@ -6,7 +6,6 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.IO;
 using Terraria.ModLoader;
-using static FurgosChecklist.GlobalItemSetTooltips;
 
 namespace FurgosChecklist
 {
@@ -42,6 +41,10 @@ namespace FurgosChecklist
 
         public override void Action(CommandCaller caller, string input, string[] args)
         {
+            Player player = caller.Player;
+            var fclPlayer = player.GetModPlayer<FCLPlayer>();
+            // ReSharper disable once InconsistentNaming
+            var ChecklistLines = player.ChecklistLines();
             switch (args.Length)
             {
                 #region Print lines
@@ -73,7 +76,7 @@ namespace FurgosChecklist
                             int hoverItemType = Main.HoverItem.type;
                             if (hoverItemType == 0)
                                 return;
-                            ChecklistLines.AddOrInsert(new ChecklistLine(hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName, 1, true));
+                            ChecklistLines.AddOrInsert(new ChecklistLine(hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName, 1, true), player);
                             break;
                         case "reset":
                         case "clear":
@@ -84,15 +87,15 @@ namespace FurgosChecklist
                             {
                                 if (ChecklistLines[i].Status == ChecklistLineStatus.ToBeDeleted)
                                 {
-                                    SwitchStatus(i, ChecklistLineStatus.ToBeDeleted);
+                                    ChecklistLines.SwitchStatus(i, ChecklistLineStatus.ToBeDeleted);
                                     break;
                                 }
                             }
-                            RemoveWhenAddOrInsert = false;
+                            fclPlayer.RemoveWhenAddOrInsert = false;
                             break;
                         case "insert":
                         case "ins":
-                            FCLPlayer.InsertIndex = -1;
+                            fclPlayer.InsertIndex = -1;
                             break;
                         default:
                             Main.NewText("指令错误", Color.Red);
@@ -105,7 +108,7 @@ namespace FurgosChecklist
                     switch (args[0].ToLower())
                     {
                         case "add":
-                            ChecklistLines.AddOrInsert(new ChecklistLine(args[1]));
+                            ChecklistLines.AddOrInsert(new ChecklistLine(args[1]), player);
                             break;
                         case "remove":
                         case "rm":
@@ -119,7 +122,7 @@ namespace FurgosChecklist
                             string[] splitArg1 = args[1].Split(":");
                             if (splitArg1.Length != 2 || !int.TryParse(splitArg1[1][..^1], out int type) || type <= 0)
                                 return;
-                            ChecklistLines.AddOrInsert(new ChecklistLine(type < Main.maxItemTypes ? type.ToString() : ModContent.GetModItem(type)?.FullName, 1, true));
+                            ChecklistLines.AddOrInsert(new ChecklistLine(type < Main.maxItemTypes ? type.ToString() : ModContent.GetModItem(type)?.FullName, 1, true), player);
                             break;
                         case "addhoveritem":
                         case "addhover":
@@ -147,14 +150,14 @@ namespace FurgosChecklist
                                         return;
                                 }
                             }
-                            ChecklistLines.AddOrInsert(new ChecklistLine(hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName, stack, checkCompletion));
+                            ChecklistLines.AddOrInsert(new ChecklistLine(hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName, stack, checkCompletion), player);
                             break;
                         case "highlight":
                         case "hl":
                             if (!int.TryParse(args[1], out int highlightIndex) || highlightIndex <= 0 || highlightIndex > ChecklistLines.Count)
                                 return;
                             highlightIndex--;
-                            SwitchStatus(highlightIndex, ChecklistLineStatus.Highlight);
+                            ChecklistLines.SwitchStatus(highlightIndex, ChecklistLineStatus.Highlight);
                             break;
                         case "edit":
                             if (!int.TryParse(args[1], out int editIndex) || editIndex <= 0 || editIndex > ChecklistLines.Count)
@@ -163,7 +166,7 @@ namespace FurgosChecklist
                             {
                                 if (ChecklistLines[i].Status == ChecklistLineStatus.ToBeDeleted)
                                 {
-                                    SwitchStatus(i, ChecklistLineStatus.ToBeDeleted);
+                                    ChecklistLines.SwitchStatus(i, ChecklistLineStatus.ToBeDeleted);
                                     break;
                                 }
                             }
@@ -181,17 +184,17 @@ namespace FurgosChecklist
                                 command = "additem";
                                 editText = $"[i/s{line.ItemStack}:{line.ItemType}]";
                             }
-                            SwitchStatus(editIndex, ChecklistLineStatus.ToBeDeleted);
-                            RemoveWhenAddOrInsert = true;
-                            FCLPlayer.NeedsOpenChatWithText = $"/fcl {command} {editText}";
+                            ChecklistLines.SwitchStatus(editIndex, ChecklistLineStatus.ToBeDeleted);
+                            fclPlayer.RemoveWhenAddOrInsert = true;
+                            fclPlayer.NeedsOpenChatWithText = $"/fcl {command} {editText}";
                             break;
                         case "insert":
                         case "ins":
                             if (!int.TryParse(args[1], out int insIndex) || insIndex <= 0 || insIndex > ChecklistLines.Count)
                                 return;
                             insIndex--;
-                            FCLPlayer.InsertIndex = insIndex;
-                            FCLPlayer.NeedsOpenChatWithText = "/fcl ";
+                            fclPlayer.InsertIndex = insIndex;
+                            fclPlayer.NeedsOpenChatWithText = "/fcl ";
                             break;
                         case "removes":
                         case "rms":
@@ -269,7 +272,7 @@ namespace FurgosChecklist
                                         return;
                                 }
                             }
-                            ChecklistLines.AddOrInsert(new ChecklistLine(type < Main.maxItemTypes ? type.ToString() : ModContent.GetModItem(type)?.FullName, stack, checkCompletionI));
+                            ChecklistLines.AddOrInsert(new ChecklistLine(type < Main.maxItemTypes ? type.ToString() : ModContent.GetModItem(type)?.FullName, stack, checkCompletionI), player);
                             break;
                         case "addhoveritem":
                         case "addhover":
@@ -295,7 +298,7 @@ namespace FurgosChecklist
                                 default:
                                     return;
                             }
-                            ChecklistLines.AddOrInsert(new ChecklistLine(hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName, hoverItemStack, checkCompletion));
+                            ChecklistLines.AddOrInsert(new ChecklistLine(hoverItemType < Main.maxItemTypes ? hoverItemType.ToString() : ModContent.GetModItem(hoverItemType)?.FullName, hoverItemStack, checkCompletion), player);
                             break;
                         default:
                             Main.NewText("指令错误", Color.Red);
@@ -329,7 +332,7 @@ namespace FurgosChecklist
                                     return;
                             }
 
-                            ChecklistLines.AddOrInsert(new ChecklistLine(type < Main.maxItemTypes ? type.ToString() : ModContent.GetModItem(type)?.FullName, stack, checkCompletion));
+                            ChecklistLines.AddOrInsert(new ChecklistLine(type < Main.maxItemTypes ? type.ToString() : ModContent.GetModItem(type)?.FullName, stack, checkCompletion), player);
                             break;
                         default:
                             Main.NewText("指令错误", Color.Red);
@@ -342,15 +345,7 @@ namespace FurgosChecklist
                     #endregion
             }
         }
-
-        public static void SwitchStatus(int index, ChecklistLineStatus status)
-        {
-            ChecklistLine line = ChecklistLines[index];
-            ChecklistLines.RemoveAt(index);
-            line.Status = line.Status == status ? ChecklistLineStatus.Normal : status;
-            ChecklistLines.Insert(index, line);
-        }
-#region Preferences
+        #region Preferences
         private static Preferences _savedChecklist;
         private static readonly string path = Path.Combine(Main.SavePath, "ModConfigs", "FurgosChecklist_SavedChecklist.json");
         public override void Load()
@@ -389,30 +384,47 @@ namespace FurgosChecklist
 
     public static class Util
     {
-        public static void AddOrInsert<T>(this List<T> list, T item)
+        public static void SwitchStatus(this List<ChecklistLine> checklistLines, int index, ChecklistLineStatus status)
         {
-            if (RemoveWhenAddOrInsert && item is ChecklistLine i)
+            ChecklistLine line = checklistLines[index];
+            checklistLines.RemoveAt(index);
+            line.Status = line.Status == status ? ChecklistLineStatus.Normal : status;
+            checklistLines.Insert(index, line);
+        }
+
+        public static void AddOrInsert<T>(this List<T> list, T item, Player player = null)
+        {
+            if (player is null)
             {
-                for (int index = 0; index < ChecklistLines.Count; index++)
-                {
-                    if (ChecklistLines[index].Status == ChecklistLineStatus.ToBeDeleted)
-                    {
-                        ChecklistLines.RemoveAt(index);
-                        ChecklistLines.Insert(index, i);
-                        RemoveWhenAddOrInsert = false;
-                        return;
-                    }
-                }
+                list.Add(item);
+                return;
             }
 
-            if (FCLPlayer.InsertIndex == -1)
+            var fclPlayer = player.GetModPlayer<FCLPlayer>();
+            if ((!player.GetModPlayer<FCLPlayer>().RemoveWhenAddOrInsert || item is not ChecklistLine line))
+                return;
+            var checklistLines = player.ChecklistLines();
+            for (int index = 0; index < checklistLines.Count; index++)
+            {
+                if (checklistLines[index].Status == ChecklistLineStatus.ToBeDeleted)
+                {
+                    checklistLines.RemoveAt(index);
+                    checklistLines.Insert(index, line);
+                    fclPlayer.RemoveWhenAddOrInsert = false;
+                    return;
+                }
+            }
+            if (fclPlayer.InsertIndex == -1)
                 list.Add(item);
+
             else
             {
-                list.Insert(FCLPlayer.InsertIndex, item);
-                FCLPlayer.InsertIndex = -1;
+                list.Insert(player.GetModPlayer<FCLPlayer>().InsertIndex, item);
+                fclPlayer.InsertIndex = -1;
             }
         }
+
+        public static List<ChecklistLine> ChecklistLines(this Player player) => player.GetModPlayer<FCLPlayer>().ChecklistLines;
 
         private static readonly JsonSerializerOptions jsonOptions = new() { IncludeFields = true };
 

@@ -1,23 +1,21 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
 using Terraria;
-using Terraria.GameInput;
 using Terraria.ModLoader;
-using static FurgosChecklist.GlobalItemSetTooltips;
 
 namespace FurgosChecklist
 {
-    public class FCLPlayer : ModPlayer
+    public partial class FCLPlayer : ModPlayer
     {
-        public static string NeedsOpenChatWithText;
-        public static int InsertIndex = -1;
+        public bool RemoveWhenAddOrInsert;
 
-        public override void OnEnterWorld(Player player)
+        public string NeedsOpenChatWithText;
+        public int InsertIndex = -1;
+
+        /*public override void OnEnterWorld(Player player)
         {
             NeedsRecalculate = true;
-        }
+        }*/
 
         public override void PostUpdateMiscEffects()
         {
@@ -52,7 +50,6 @@ namespace FurgosChecklist
                     {
                         Main.NewText($"[i/s{line.ItemStack}:{type}] 已完成！", Color.Gold);
                         ChecklistLines.Remove(line);
-                        NeedsRecalculate = true;
                         break;
                     }
                     if (item.type == type)
