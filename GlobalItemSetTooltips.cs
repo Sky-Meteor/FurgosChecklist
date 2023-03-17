@@ -18,8 +18,10 @@ namespace FurgosChecklist
                     Recalculate();
                     NeedsRecalculate = false;
                 }*/
-
-                foreach (ChecklistLine line in Main.LocalPlayer.ChecklistLines())
+                var checklistLines = Main.LocalPlayer.ChecklistLines();
+                if (checklistLines == null)
+                    return;
+                foreach (ChecklistLine line in checklistLines)
                 {
                     var tooltipLine = new TooltipLine(Mod, "ChecklistTooltip", line.Text);
                     tooltipLine.OverrideColor = line.Status switch

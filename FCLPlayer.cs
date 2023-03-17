@@ -31,6 +31,8 @@ namespace FurgosChecklist
 
         private void CheckItemCompletion()
         {
+            if (ChecklistLines == null)
+                return;
             foreach (ChecklistLine line in ChecklistLines.ToList())
             {
                 if (string.IsNullOrEmpty(line.ItemType))
